@@ -9,7 +9,20 @@ Fig 1: Illustration of the CGAN architecture for QST. Data $\mathbf d$ sampled f
 The full code to reproduce [https://arxiv.org/abs/2008.03240](https://arxiv.org/abs/2008.03240) will be available here soon.
 
 
-### Iterative Maximum Likelihood estimation of a Cat state
+### Installation and use
 
-See []() for the full code to reproduce the following reconstruction.
+The code is not tested and may contain many bugs right now. However if you have the following packages installed in a Python 3 environment, you should be able to run the ```examples/qst-cgan.ipynb``` notebook:
 
+	- qutip
+	- tensorflow==2.0
+	- tensorflow_addons=0.6
+	- IPython
+
+To run the code after manually installing the needed packages:
+	- clone this directory
+	- cd to the current folder `cd qst-cgan`
+	- make a local installation with `python setup.py develop`
+	- cd to the example folder `cd examples` and try to run `qst_cgan.ipynb`
+
+
+Please send me an email if you face any trouble running the code at "shahnawaz.ahmed95@gmail.com". I will be rigorously testing the code and refactoring it soon.
