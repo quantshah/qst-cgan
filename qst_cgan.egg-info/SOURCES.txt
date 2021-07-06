@@ -1,0 +1,6 @@
+README.md
+setup.py
+qst_cgan.egg-info/PKG-INFO
+qst_cgan.egg-info/SOURCES.txt
+qst_cgan.egg-info/dependency_links.txt
+qst_cgan.egg-info/top_level.txt
