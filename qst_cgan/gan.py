@@ -381,7 +381,9 @@ def train_gan(
             if rho_true is not None:
                 if i % log_interval == 0:
                     f_mean_10 = np.mean([fidelity(rho_true, s) for s in states[-10:]])
-                    f_mean_20 = np.mean([fidelity(rho_true, s) for s in states[-20:-10]])
+                    f_mean_20 = np.mean(
+                        [fidelity(rho_true, s) for s in states[-20:-10]]
+                    )
                     if np.abs(f_mean_10 - f_mean_20) < tol:
                         skip = True
                 f = fidelity(rho_true, states[-1])

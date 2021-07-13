@@ -3,32 +3,30 @@ Utility function and operations
 """
 import numpy as np
 
-from qutip import coherent_dm as qutip_coherent_dm
-from qutip import thermal_dm as qutip_thermal_dm
-from qutip import fock_dm as qutip_fock_dm
-from qutip import Qobj, fock, coherent, displace
+
+from qutip import Qobj
 
 import tensorflow as tf
 
-from scipy.special import binom
 from math import sqrt
 
 
 def batched_expect(ops, rhos):
     """
     Calculates expectation values for a batch of density matrices
-    for a batch of N sets of operators
+    for a set of operators.
 
     Args:
-        ops (`tf.Tensor`): a 4D tensor (batch_size, N, hilbert_size, hilbert_size) of N
-                                         measurement operators
-        rhos (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size, hilbert_size)
+        ops (`tf.Tensor`): a tensor of shape (batch_size, N, hilbert_size,
+                                                             hilbert_size) 
+                           of N measurement operators.
+        rhos (`tf.Tensor`): a tensor (batch_size, hilbert_size, hilbert_size).
 
     Returns:
-        expectations (:class:`tensorflow.Tensor`): A 4D tensor (batch_size, N)
-                                                   giving expectation values for the
-                                                   N grid of operators for
-                                                   all the density matrices (batch_size).
+        expectations (:class:`tf.Tensor`): A tensor shaped as (batch_size, N)
+                                           representing expectation values for
+                                           the N operators for all the density
+                                           matrices (batch_size).
     """
     products = tf.einsum("bnij, bjk->bnik", ops, rhos)
     traces = tf.linalg.trace(products)
@@ -58,9 +56,9 @@ def dm_to_tf(rhos):
         rhos (list of `qutip.Qobj`): List of N qutip density matrices
 
     Returns:
-        tf_dms (:class:`tensorflow.Tensor`): A 3D tensor (N, hilbert_size, hilbert_size) of N
-                                         density matrices
-
+        tf_dms (:class:`tf.Tensor`): A tensor of shape (N, hilbert_size,
+                                                           hilbert_size)
+                                     of N density matrices.
     """
     tf_dms = tf.convert_to_tensor(
         [tf.complex(rho.full().real, rho.full().imag) for rho in rhos]
@@ -73,11 +71,11 @@ def tf_to_dm(rhos):
     Convert a tensorflow density matrix to qutip density matrix
 
     Args:
-        rhos (`tf.Tensor`): a 4D tensor (N, hilbert_size, hilbert_size)
-                            representing density matrices
+        rhos (`tf.Tensor`): a tensor of shape (N, hilbert_size, hilbert_size)
+                            representing N density matrices.
 
     Returns:
-        rho_gen (list of :class:`qutip.Qobj`): A list of N density matrices
+        rho_gen (list of :class:`qutip.Qobj`): A list of N density matrices.
 
     """
     rho_gen = [Qobj(rho.numpy()) for rho in rhos]
@@ -89,13 +87,15 @@ def clean_cholesky(img):
     Cleans an input matrix to make it the Cholesky decomposition matrix T
 
     Args:
-        img (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size, hilbert_size, 2)
-                           representing batch_size random outputs from a neural netowrk.
-                           The last dimension is for separating the real and imaginary part
+        img (`tf.Tensor`): a tensor of shape (batch_size, hilbert_size,
+                                                          hilbert_size, 2)
+                           representing random outputs from a neural netowrk.
+                           The last dimension is for separating the real and
+                           imaginary part.
 
     Returns:
         T (`tf.Tensor`): a 3D tensor (N, hilbert_size, hilbert_size)
-                           representing N T matrices
+                           representing N matrices used for Cholesky decomp.
     """
     real = img[:, :, :, 0]
     imag = img[:, :, :, 1]
@@ -115,12 +115,12 @@ def density_matrix_from_T(tmatrix):
     Gets density matrices from T matrices and normalizes them.
 
     Args:
-        tmatrix (`tf.Tensor`): 3D tensor (N, hilbert_size, hilbert_size)
-                           representing N valid T matrices
+        tmatrix (`tf.Tensor`): A tensor (N, hilbert_size, hilbert_size)
+                               representing N valid T matrices.
 
     Returns:
-        rho (`tf.Tensor`): 3D tensor (N, hilbert_size, hilbert_size)
-                           representing N density matrices
+        rho (`tf.Tensor`): A tensor of shape (N, hilbert_size, hilbert_size)
+                           representing N density matrices.
     """
     T = tmatrix
     T_dagger = tf.transpose(T, perm=[0, 2, 1], conjugate=True)
@@ -138,12 +138,15 @@ def convert_to_real_ops(ops):
     can take as input.
 
     Args:
-        ops (`tf.Tensor`): a 4D tensor (batch_size, N, hilbert_size, hilbert_size) of N
-                           measurement operators
+        ops (`tf.Tensor`): a 4D tensor (batch_size, N, hilbert_size,
+                                                       hilbert_size)
+                           of N measurement operators.
 
     Returns:
-        tf_ops (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size, hilbert_size, 2*N) of N
-                           measurement operators converted into real matrices
+        tf_ops (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size,
+                                                       hilbert_size, 2*N)
+                              of N measurement operators converted into real
+                              matrices.
     """
     tf_ops = tf.transpose(ops, perm=[0, 2, 3, 1])
     tf_ops = tf.concat([tf.math.real(tf_ops), tf.math.imag(tf_ops)], axis=-1)
@@ -156,12 +159,15 @@ def convert_to_complex_ops(ops):
     can take as input.
 
     Args:
-        ops (`tf.Tensor`): a 4D tensor (batch_size, N, hilbert_size, hilbert_size) of N
-                           measurement operators
+        ops (`tf.Tensor`): a 4D tensor (batch_size, N, hilbert_size,
+                                                       hilbert_size)
+                           of N measurement operators.
 
     Returns:
-        tf_ops (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size, hilbert_size, 2*N) of N
-                           measurement operators converted into real matrices
+        tf_ops (`tf.Tensor`): a 4D tensor (batch_size, hilbert_size,
+                                                       hilbert_size, 2*N)
+                              of N measurement operators converted into real
+                              matrices.
     """
     shape = ops.shape
     num_points = shape[-1]
@@ -173,8 +179,13 @@ def convert_to_complex_ops(ops):
 
 
 def tf_fidelity(A, B):
-    """
-    Calculated the fidelity between batches of tensors A and B
+    """Calculates the fidelity between tensors A and B.
+
+    Args:
+        A, B (tf.Tensor): List of tensors (hilbert_size, hilbert_size).
+
+    Returns:
+        float: Fidelity between A and B
     """
     sqrtmA = tf.matrix_square_root(A)
     temp = tf.matmul(sqrtmA, B)
