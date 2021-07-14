@@ -17,10 +17,13 @@ To run the code:
 
 	- cd to the current folder `cd qst-cgan`
 
-	- make a local installation with `pip install -e .`
+	- make a local installation with `pip install -e .` which installs the necessary libraries such as tensorflow-cpu and qutip to run the code.
 
 	- cd to the folder paper-figures `cd paper-figures` and run the notebooks
 
+Please note that the code works only with the CPU version of TensorFlow which
+can be installed specifically with:
 
+`pip install tensorflow-cpu`
 
 Please send me an email if you face any trouble running the code at "shahnawaz.ahmed95@gmail.com".
