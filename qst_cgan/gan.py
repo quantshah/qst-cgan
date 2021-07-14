@@ -1,14 +1,7 @@
 """
 Bigger GAN network
 """
-import numpy as np
-
-
 import tensorflow as tf
-from tensorflow.keras.layers import Input
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-import tensorflow_addons as tfa
-
 
 from tqdm.auto import tqdm
 

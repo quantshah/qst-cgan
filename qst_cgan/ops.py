@@ -8,8 +8,6 @@ from qutip import Qobj
 
 import tensorflow as tf
 
-from math import sqrt
-
 
 def batched_expect(ops, rhos):
     """
