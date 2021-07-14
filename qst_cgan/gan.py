@@ -97,8 +97,6 @@ def Generator(hilbert_size, num_points, noise=None):
     """
     initializer = tf.random_normal_initializer(0.0, 0.02)
 
-    n = int(hilbert_size / 2)
-
     ops = tf.keras.layers.Input(
         shape=[hilbert_size, hilbert_size, num_points * 2], name="operators"
     )
