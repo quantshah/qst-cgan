@@ -9,27 +9,14 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import tensorflow_addons as tfa
 
-from qutip.visualization import hinton, plot_wigner
-from qutip.wigner import qfunc, wigner
-from qutip import Qobj, fidelity, qeye, destroy
-from qutip.states import coherent_dm, thermal_dm, coherent, fock_dm
-from qutip.random_objects import rand_dm
-from qutip import expect
-from qutip import coherent_dm, coherent, expect
-
 
 from tqdm.auto import tqdm
 
 
 from qst_cgan.ops import (
-    random_alpha,
-    dm_to_tf,
-    husimi_ops,
-    tf_to_dm,
     clean_cholesky,
     density_matrix_from_T,
     batched_expect,
-    convert_to_real_ops,
     convert_to_complex_ops,
 )
 
@@ -255,11 +242,42 @@ def generator_loss(disc_generated_output, gen_output, target, LAMBDA=0.0):
 
 
 def train_step(A, x):
-    """Takes one step of training for the full A matrix and x statistics
+    """Takes one step of training for the full A matrix representing the
+    measurement operators and data x.
+
+    Note that the `generator`, `discriminator`, `generator_optimizer` and the
+    `discriminator_optimizer` has to be defined before calling this function.
 
     Args:
         A (TYPE): Description
         x (TYPE): Description
+
+    Example
+    -------
+    If `ops_tf` represents the operators measured as a TensorFlow tensor
+    and `x` represents the data vector
+
+    >> A = convert_to_real_ops(ops_tf)
+    >> num_measurements = x.shape[-1]
+    >> lr = 0.0001 # learning rate
+    
+    Define the Generator and the Discriminator as well as a model that gives
+    density matrix of the state
+
+    >> generator = Generator(hilbert_size, num_measurements, noise=0.)
+    >> discriminator = Discriminator(hilbert_size, num_measurements)
+
+    >> density_layer_idx = 17
+    >> model_dm tf.keras.Model(inputs=generator.input,
+                        outputs=generator.layers[density_layer_idx].output)
+
+    >> generator_optimizer = tf.keras.optimizers.Adam(lr, 0.5, 0.5)
+    >> discriminator_optimizer = tf.keras.optimizers.Adam(lr, 0.5, 0.5)
+    
+    >> for i in range(100):
+           train_step(A, x)
+
+    >> density_matrix = model_dm([A, x])    
     """
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         gen_output = generator([A, x], training=True)
@@ -285,112 +303,3 @@ def train_step(A, x):
     discriminator_optimizer.apply_gradients(
         zip(discriminator_gradients, discriminator.trainable_variables)
     )
-
-
-def train_gan(
-    A,
-    x,
-    rho_true=None,
-    tol=None,
-    generator=None,
-    discriminator=None,
-    max_iterations=100,
-    log_interval=20,
-    lam=0.0,
-    lr=None,
-):
-    tf.keras.backend.clear_session()
-    hilbert_size = A.shape[1]
-    num_points = int(A.shape[-1] / 2)
-
-    if tol is None:
-        tol = 1e-4
-
-    if generator is None:
-        generator = Generator(hilbert_size, num_points)
-
-    if discriminator is None:
-        discriminator = Discriminator(hilbert_size, num_points)
-
-    density_layer_idx = None
-
-    for i, layer in enumerate(generator.layers):
-        if "density_matrix" in layer._name:
-            density_layer_idx = i
-            break
-    model_dm = tf.keras.Model(
-        inputs=generator.input, outputs=generator.layers[density_layer_idx].output
-    )
-
-    if lr == None:
-        initial_learning_rate = 0.002
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-            initial_learning_rate, decay_steps=1000, decay_rate=0.96, staircase=False
-        )
-
-    else:
-        lr_schedule = lr
-
-    generator_optimizer = tf.keras.optimizers.Adam(lr_schedule, 0.5, 0.5)
-    discriminator_optimizer = tf.keras.optimizers.Adam(lr_schedule, 0.5, 0.5)
-
-    def train_step(A, x):
-        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            gen_output = generator([A, x], training=True)
-
-            disc_real_output = discriminator([A, x, x], training=True)
-            disc_generated_output = discriminator([A, x, gen_output], training=True)
-
-            gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(
-                disc_generated_output, gen_output, x, LAMBDA=lam
-            )
-            disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
-
-        generator_gradients = gen_tape.gradient(
-            gen_total_loss, generator.trainable_variables
-        )
-        discriminator_gradients = disc_tape.gradient(
-            disc_loss, discriminator.trainable_variables
-        )
-
-        generator_optimizer.apply_gradients(
-            zip(generator_gradients, generator.trainable_variables)
-        )
-        discriminator_optimizer.apply_gradients(
-            zip(discriminator_gradients, discriminator.trainable_variables)
-        )
-
-    f_list = []
-    gen_dm = model_dm([A, x], training=False)
-    rho_gen = tf_to_dm(gen_dm)
-
-    states = [rho_gen[0]]
-    pbar = tqdm(range(max_iterations))
-    skip = False
-
-    for i in pbar:
-        if skip:
-            pbar.close()
-            break
-
-        else:
-            train_step(A, x)
-            gen_dm = model_dm([A, x], training=False)
-            rho_gen = tf_to_dm(gen_dm)[0]
-            states.append(rho_gen)
-            if rho_true is not None:
-                if i % log_interval == 0:
-                    f_mean_10 = np.mean([fidelity(rho_true, s) for s in states[-10:]])
-                    f_mean_20 = np.mean(
-                        [fidelity(rho_true, s) for s in states[-20:-10]]
-                    )
-                    if np.abs(f_mean_10 - f_mean_20) < tol:
-                        skip = True
-                f = fidelity(rho_true, states[-1])
-                f_list.append(f)
-                pbar.set_description("Fidelity QST-CGAN {}".format(f))
-            else:
-                pass
-                pbar.set_description("Pass rho_true to show fidelity to a target state")
-
-    return f_list, model_dm, states
