@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 
-requires = ["numpy", "qutip", "tensorflow", "tensorflow_addons"]
+requires = ["tensorflow", "tensorflow_addons", "qutip", "tqdm"]
 packages = find_packages(
     where="qst_cgan", exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
 )
@@ -15,5 +15,5 @@ setup(
     author="Shahnawaz Ahmed",
     author_email="shahnawaz.ahmed95@gmail.com",
     packages=packages,
-    requires=requires,
+    install_requires=requires,
 )

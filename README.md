@@ -12,10 +12,15 @@ The full code to reproduce [https://arxiv.org/abs/2008.03240](https://arxiv.org/
 ### Installation and use
 
 To run the code:
+
 	- clone this directory
+
 	- cd to the current folder `cd qst-cgan`
+
 	- make a local installation with `pip install -e .`
+
 	- cd to the folder paper-figures `cd paper-figures` and run the notebooks
+
 
 
 Please send me an email if you face any trouble running the code at "shahnawaz.ahmed95@gmail.com".
