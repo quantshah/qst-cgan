@@ -217,18 +217,19 @@ def discriminator_loss(disc_real_output, disc_generated_output):
     return total_disc_loss
 
 
-def generator_loss(disc_generated_output, gen_output, target, LAMBDA=0.0):
-    """Summary
+def generator_loss(disc_generated_output, gen_output, target, lam=0.0):
+    """Computes the generator loss
 
     Args:
-        disc_generated_output (`tf.Tensor`): Output of the discriminator when it was shown the generated data
-        as the target
-        gen_output (`tf.Tensor`):
-        target (TYPE): Description
-        LAMBDA (float, optional): Description
+        disc_generated_output (tf.Tensor): Output of the discriminator
+                                         when it was shown the generated data
+                                         as the target.
+        gen_output (tf.Tensor): Output of the generator.
+        target (tf.Tensor): Target data
+        lam (float, optional): The weight of the L1 loss.
 
     Returns:
-        TYPE: Description
+        total_gen_loss, gan_loss, l1_loss (float, float, float): Loss terms.
     """
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
@@ -236,7 +237,7 @@ def generator_loss(disc_generated_output, gen_output, target, LAMBDA=0.0):
     # mean absolute error
     l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
 
-    total_gen_loss = gan_loss + LAMBDA * l1_loss
+    total_gen_loss = gan_loss + lam * l1_loss
 
     return total_gen_loss, gan_loss, l1_loss
 
@@ -249,8 +250,18 @@ def train_step(A, x):
     `discriminator_optimizer` has to be defined before calling this function.
 
     Args:
-        A (TYPE): Description
-        x (TYPE): Description
+        A (tf.Tensor): A tensor of shape (m, hilbert_size, hilbert_size, n x 2)
+                       where m=1 for a single reconstruction, and n represents
+                       the number of measured operators. We split the complex
+                       operators as real and imaginary in the last axis. The 
+                       helper function `convert_to_real_ops` can be used to
+                       generate the matrix A with a set of complex operators
+                       given by `ops` with shape (1, n, hilbert_size, hilbert_size)
+                       by calling `A = convert_to_real_ops(ops)`.
+
+        x (tf.Tensor): A tensor of shape (m, n) with m=1 for a single
+                       reconstruction and `n` representing the number of
+                       measurements. 
 
     Example
     -------
@@ -286,7 +297,7 @@ def train_step(A, x):
         disc_generated_output = discriminator([A, x, gen_output], training=True)
 
         gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(
-            disc_generated_output, gen_output, x
+            disc_generated_output, gen_output, x, lam=lam
         )
         disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
