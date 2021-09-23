@@ -23,10 +23,9 @@ To run the code:
 
 Note
 ----
-1. Please note that the code works only with the CPU version of TensorFlow which
-can be installed specifically with:
+1. Please note that the code requires TensorFlow which might give you an error due to the pinned numpy version. If you face such an issue, upgrade your numpy after installing TensorFlow 
 
-`pip install tensorflow-cpu`
+`pip install -U numpy`
 
 2. The Hilbert size for the output density matrices are set to 32 for now to follow the results of the paper. The last layer of the neural network needs to be edited to allow for other Hilbert space sizes. I will be putting an update on adapting this code to qubit tomography with a flexible Hilbert space size soon.
 
